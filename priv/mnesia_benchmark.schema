@@ -1,0 +1,8 @@
+{mapping, "mnesia.dc_dump_limit", "mnesia.dc_dump_limit", [
+    {datatype, integer},
+    {default, 40}
+]}.
+{mapping, "mnesia.dump_log_write_threshold", "mnesia.dump_log_write_threshold", [
+    {datatype, integer},
+    {default, 5000}
+]}.
