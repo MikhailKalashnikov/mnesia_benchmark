@@ -4,8 +4,7 @@
 
 %% API
 -export([insert_test_data/1, init/1]).
--export([test_n/4, test_s_n/4, test_s_n/2]).
--export([test_s_nh/4, test_s_nh/2]).
+-export([test_n/3, test_s_n/4, test_s_n/2]).
 -record(test1, {id, value}).
 
 init(Nodes) ->
@@ -31,8 +30,8 @@ insert_test_data(N) ->
         end,
     mnesia:transaction(F).
 
-test_n(Key, N, Sync, UpdateHistogram) ->
-    F = fun() -> lists:foreach(fun(_X) -> do_write(Key, Sync, UpdateHistogram) end, 
+test_n(Key, N, Sync) ->
+    F = fun() -> lists:foreach(fun(_X) -> do_write(Key, Sync) end,
         lists:seq(1, N)) end,
     {Micros, _} = timer:tc(F),
     ?update_histogram([mnesia_benchmark, proc_time], Micros div 1000),
@@ -45,22 +44,11 @@ test_s_n(N, K) ->
 test_s_n(Key, N, K, Sync) ->
     lists:foreach(
         fun(_X) ->
-            spawn(?MODULE, test_n, [Key, K, Sync, false])
+            spawn(?MODULE, test_n, [Key, K, Sync])
         end,
         lists:seq(1, N)).
 
-
-test_s_nh(N, K) ->
-    test_s_nh(123, N, K, false).
-
-test_s_nh(Key, N, K, Sync) ->
-    lists:foreach(
-        fun(_X) ->
-            spawn(?MODULE, test_n, [Key, K, Sync, true])
-        end,
-        lists:seq(1, N)).
-
-do_write(Key, Sync, UpdateHistogram) ->
+do_write(Key, Sync) ->
     F2 = fun() ->
         F = fun() ->
             [#test1{value = V} = R] = mnesia:wread({test1, Key}),
@@ -72,7 +60,4 @@ do_write(Key, Sync, UpdateHistogram) ->
         end
          end,
     {Micros, _} = timer:tc(F2),
-    case UpdateHistogram of
-        true -> ?update_histogram([mnesia_benchmark, do_write_time], Micros div 1000);
-        _ -> ok
-    end.
+    mnesia_benchmark_srv:update_histogram(Micros div 1000).
